@@ -186,6 +186,7 @@ void drawElements()
 			}
 		}
 
+
 		vertex_data_size = scene.vertex_data.size();
 
 		GLfloat* vertexPos = new GLfloat[vertex_data_size*3];
@@ -196,11 +197,39 @@ void drawElements()
 			vertexPos[++j] = scene.vertex_data[i].y;
 			vertexPos[++j] = scene.vertex_data[i].z;
 		}
-		
-		for(int i=0; i<12; i++)
+
+
+		//
+		//	CALCULATE NORMALS
+		//
+
+		GLfloat* vertexNormals = new GLfloat[vertex_data_size*3];
+
+		for(int i=0, idx=0 ; i< scene.vertex_data.size(); i++)
 		{
-			std::cout << vertexPos[i] << std::endl;
+			Vec3f normal(0,0,0);
+			for(auto mesh: scene.meshes)
+			{
+				for(int j=0; j< mesh.faces.size(); j++)
+				{
+					if(i == mesh.faces[j].v0_id || i == mesh.faces[j].v1_id || i == mesh.faces[j].v2_id)
+					{
+						Vec3f a = scene.vertex_data[mesh.faces[j].v0_id]; // Burda hangi vertice gore normal aldigimizin onemli olmamasi lazim
+						Vec3f b = scene.vertex_data[mesh.faces[j].v1_id]; // Senin attigin linkte ona gore a,b,c hesaplamis
+						Vec3f c = scene.vertex_data[mesh.faces[j].v2_id];
+
+						Vec3f n = (b-a).cross(c-a).normalized();
+						normal = normal + n;
+					}
+				}
+			}
+			normal.normalize();
+			vertexNormals[idx]=normal.x;
+			vertexNormals[++idx]=normal.y;
+			vertexNormals[++idx]=normal.z;
+			idx++;
 		}
+		
 		std::cout << faces_size << std::endl;
 		std::cout << vertex_data_size << std::endl;
         
@@ -214,8 +243,8 @@ void drawElements()
 		glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 
-		meshVertexPosDataSizeInBytes = sizeof(vertexPos)*vertex_data_size*3;
-		int indexDataSizeInBytes = sizeof(indices)*faces_size*3;
+		meshVertexPosDataSizeInBytes = sizeof(GLfloat)*vertex_data_size*3;
+		int indexDataSizeInBytes = sizeof(GLuint)*faces_size*3;
 		
 		glBufferData(GL_ARRAY_BUFFER, meshVertexPosDataSizeInBytes, vertexPos, GL_STATIC_DRAW);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices, GL_STATIC_DRAW);
