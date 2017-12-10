@@ -195,6 +195,7 @@ void parser::Scene::loadFromXml(const std::string& filepath)
                     }
 
                     transformation.id=transformation_id;
+                    transformation.id--;
                     mesh.transformations.push_back(transformation);
             }
         }

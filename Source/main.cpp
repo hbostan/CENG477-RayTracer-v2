@@ -126,29 +126,83 @@ void drawCubeElementsVBO()
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
 
+
+void doTransformations(std::vector<parser::Transformation> transformations)
+{
+	for(auto t: transformations)
+	{
+		if(t.transformation_type == "Translation")
+		{
+			auto translation = scene.translations[t.id];
+			glTranslatef(translation.x, translation.y, translation.z);
+		}
+		else if(t.transformation_type == "Rotation")
+		{
+			auto rotation = scene.rotations[t.id];
+			glRotatef(rotation.x,rotation.y, rotation.z, rotation.w);
+		}
+		else if(t.transformation_type == "Scaling")
+		{
+			auto scaling = scene.translations[t.id];
+			glScalef(scaling.x, scaling.y, scaling.z);
+		}
+	}
+}
+
+
 void drawElements()
 {
     static bool meshFirstTime = true;
 
     static int meshVertexPosDataSizeInBytes;
 
+	static int faces_size;	
+	static int vertex_data_size;
+
     if (meshFirstTime)
 	{
 		meshFirstTime = false;
+		faces_size = 0;	
+		vertex_data_size = 0;
 
 		glEnableClientState(GL_VERTEX_ARRAY);
-		
-        GLuint indices[] = {
-			(GLuint)scene.meshes[0].faces[0].v0_id, (GLuint)scene.meshes[0].faces[0].v1_id, (GLuint)scene.meshes[0].faces[0].v2_id,
-			(GLuint)scene.meshes[0].faces[1].v0_id, (GLuint)scene.meshes[0].faces[1].v1_id, (GLuint)scene.meshes[0].faces[1].v2_id,
-		};
 
-        GLfloat vertexPos[] = {
-            17.717960, 0.023002, 16.940420,
-            -17.698040, 0.023002, 16.940420,
-            17.717960, 0.023002, -18.475580,
-            -17.698040, 0.023002, -18.475580,
-        };
+		for(auto mesh: scene.meshes)
+		{
+			faces_size += mesh.faces.size();
+		}
+
+		GLuint* indices = new GLuint[faces_size*3];
+        
+		int idx =0;
+		for(auto mesh: scene.meshes)
+		{
+			for(int i=0; i<mesh.faces.size(); i++)
+			{
+				indices[idx] = (GLuint) mesh.faces[i].v0_id;
+				indices[++idx] = (GLuint)mesh.faces[i].v1_id;
+				indices[++idx] = (GLuint)mesh.faces[i].v2_id;
+				idx++;
+			}
+		}
+
+		vertex_data_size = scene.vertex_data.size();
+
+		GLfloat* vertexPos = new GLfloat[vertex_data_size*3];
+
+		for(int i=0, j=0; i<vertex_data_size; j++, i++)
+		{
+			vertexPos[j] = scene.vertex_data[i].x;
+			vertexPos[++j] = scene.vertex_data[i].y;
+			vertexPos[++j] = scene.vertex_data[i].z;
+		}
+		
+		for(int i=0; i<12; i++)
+		{
+			std::cout << vertexPos[i] << std::endl;
+		}
+		std::cout << faces_size << std::endl;
+		std::cout << vertex_data_size << std::endl;
         
         GLuint vertexAttribBuffer, indexBuffer;
 
@@ -160,15 +214,28 @@ void drawElements()
 		glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 
-		meshVertexPosDataSizeInBytes = sizeof(vertexPos);
-		int indexDataSizeInBytes = sizeof(indices);
+		meshVertexPosDataSizeInBytes = sizeof(vertexPos)*vertex_data_size*3;
+		int indexDataSizeInBytes = sizeof(indices)*faces_size*3;
 		
 		glBufferData(GL_ARRAY_BUFFER, meshVertexPosDataSizeInBytes, vertexPos, GL_STATIC_DRAW);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices, GL_STATIC_DRAW);
-	}
 
+		delete[] vertexPos;
+		delete[] indices;
+	}
+	
 	glVertexPointer(3, GL_FLOAT, 0, 0);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	int faces_drawn = 0;
+	for(auto mesh: scene.meshes)
+	{
+		int face_count = mesh.faces.size();
+		glPushMatrix();
+		doTransformations(mesh.transformations);//glRotatef(135, 0, 1, 0);
+		glDrawElements(GL_TRIANGLES, face_count*3, GL_UNSIGNED_INT,(const void*)faces_drawn);// (const void*)(sizeof(GLfloat)*6));
+		glPopMatrix();
+		faces_drawn += sizeof(GLfloat)*face_count*3;
+	}
 
 }
 
@@ -200,14 +267,9 @@ void display()
 	glRotatef(angle / 4, 0, 0, 1);
 	glScalef(5, 5, 5);
 	drawCubeElementsVBO();
-
-	glLoadIdentity();
-	glTranslatef(6, -6, deltaZ);
-	glRotatef(angle / 8, 1, 1, 0);
-	glScalef(5, 5, 5);
-	drawCubeElementsVBO();*/
-
-    //angle += 0.5;
+*/
+	
+	angle += 0.5;
     drawElements();
 }
 
