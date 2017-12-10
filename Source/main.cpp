@@ -46,7 +46,7 @@ void reshape(GLFWwindow* win, int w, int h)   // Create The Reshape Function (th
 void init(int w, int h)
 {
     glEnable(GL_DEPTH_TEST);
-	glShadeModel(GL_FLAT);
+	glShadeModel(GL_SMOOTH);
 
     //reshape(win, w, h);
 }
@@ -166,6 +166,8 @@ void drawElements()
 		vertex_data_size = 0;
 
 		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glEnable(GL_LIGHTING);
 
 		for(auto mesh: scene.meshes)
 		{
@@ -229,7 +231,43 @@ void drawElements()
 			vertexNormals[++idx]=normal.z;
 			idx++;
 		}
+
 		
+		GLfloat ambient[] = {scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z, 1.0f};
+
+		for(int i=0; i<scene.point_lights.size(); i++)
+		{
+			glEnable(GL_LIGHT0 + i);
+			GLfloat color[] = {scene.point_lights[i].intensity.x,scene.point_lights[i].intensity.y,scene.point_lights[i].intensity.z, 1.0f};
+			GLfloat position[] = {scene.point_lights[i].position.x,scene.point_lights[i].position.y,scene.point_lights[i].position.z, 1.0f};
+
+			glLightfv(GL_LIGHT0 + i,GL_POSITION, position);
+			glLightfv(GL_LIGHT0 + i,GL_DIFFUSE, color);
+			glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
+		}
+
+		/*glEnable(GL_LIGHT0);
+		GLfloat color[] = {1.0,0,0,1};
+		GLfloat position[] = {2,3,4,1};
+		GLfloat ambient[] = {0.05, 0.05, 0.05, 1};
+		glLightfv(GL_LIGHT0,GL_POSITION, position);
+		glLightfv(GL_LIGHT0,GL_DIFFUSE, color);
+		glLightfv(GL_LIGHT0,GL_SPECULAR, color);
+		glLightfv(GL_LIGHT0,GL_AMBIENT, ambient);
+		
+
+		
+		glEnable(GL_LIGHT1);
+		GLfloat color1[] = {0,0,1.0,1};
+		GLfloat position1[] = {-2,3,4,1};
+		GLfloat ambient1[] = {0.05, 0.05, 0.05, 1};
+		glLightfv(GL_LIGHT1,GL_POSITION, position1);
+		glLightfv(GL_LIGHT1,GL_DIFFUSE, color1);
+		glLightfv(GL_LIGHT1,GL_SPECULAR, color1);
+		glLightfv(GL_LIGHT1,GL_AMBIENT, ambient1);*/
+
+
+
 		std::cout << faces_size << std::endl;
 		std::cout << vertex_data_size << std::endl;
         
@@ -244,9 +282,13 @@ void drawElements()
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 
 		meshVertexPosDataSizeInBytes = sizeof(GLfloat)*vertex_data_size*3;
+		int normalDataSizeInBytes = sizeof(GLfloat)*vertex_data_size*3;
 		int indexDataSizeInBytes = sizeof(GLuint)*faces_size*3;
 		
-		glBufferData(GL_ARRAY_BUFFER, meshVertexPosDataSizeInBytes, vertexPos, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, meshVertexPosDataSizeInBytes+normalDataSizeInBytes, vertexPos, GL_STATIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, meshVertexPosDataSizeInBytes, vertexPos);
+		glBufferSubData(GL_ARRAY_BUFFER, meshVertexPosDataSizeInBytes, normalDataSizeInBytes, vertexNormals);
+
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices, GL_STATIC_DRAW);
 
 		delete[] vertexPos;
@@ -254,6 +296,7 @@ void drawElements()
 	}
 	
 	glVertexPointer(3, GL_FLOAT, 0, 0);
+	glNormalPointer(GL_FLOAT,0,(void*)meshVertexPosDataSizeInBytes);
 
 	int faces_drawn = 0;
 	for(auto mesh: scene.meshes)
