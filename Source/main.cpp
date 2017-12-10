@@ -129,8 +129,9 @@ void drawCubeElementsVBO()
 
 void doTransformations(std::vector<parser::Transformation> transformations)
 {
-	for(auto t: transformations)
+	for(auto it = transformations.rbegin(); it!=transformations.rend(); it++)
 	{
+		auto t = *it;
 		if(t.transformation_type == "Translation")
 		{
 			auto translation = scene.translations[t.id];
@@ -258,28 +259,6 @@ void drawElements()
 			glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
 		}
 
-		/*glEnable(GL_LIGHT0);
-		GLfloat color[] = {1.0,0,0,1};
-		GLfloat position[] = {2,3,4,1};
-		GLfloat ambient[] = {0.05, 0.05, 0.05, 1};
-		glLightfv(GL_LIGHT0,GL_POSITION, position);
-		glLightfv(GL_LIGHT0,GL_DIFFUSE, color);
-		glLightfv(GL_LIGHT0,GL_SPECULAR, color);
-		glLightfv(GL_LIGHT0,GL_AMBIENT, ambient);
-		
-
-		
-		glEnable(GL_LIGHT1);
-		GLfloat color1[] = {0,0,1.0,1};
-		GLfloat position1[] = {-2,3,4,1};
-		GLfloat ambient1[] = {0.05, 0.05, 0.05, 1};
-		glLightfv(GL_LIGHT1,GL_POSITION, position1);
-		glLightfv(GL_LIGHT1,GL_DIFFUSE, color1);
-		glLightfv(GL_LIGHT1,GL_SPECULAR, color1);
-		glLightfv(GL_LIGHT1,GL_AMBIENT, ambient1);*/
-
-
-
 		std::cout << faces_size << std::endl;
 		std::cout << vertex_data_size << std::endl;
         
@@ -316,6 +295,19 @@ void drawElements()
 		int face_count = mesh.faces.size();
 		glPushMatrix();
 		doTransformations(mesh.transformations);//glRotatef(135, 0, 1, 0);
+
+		auto mat = scene.materials[mesh.material_id];
+		
+		GLfloat amb[] ={mat.ambient.x, mat.ambient.y, mat.ambient.z};
+		GLfloat diff[] ={mat.diffuse.x, mat.diffuse.y, mat.diffuse.z};
+		GLfloat spec[] = {mat.specular.x, mat.specular.y, mat.specular.z};
+		GLfloat shininess[] = {mat.phong_exponent};
+
+		glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, diff);
+		glMaterialfv(GL_FRONT, GL_SPECULAR, spec);
+		glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
+
 		glDrawElements(GL_TRIANGLES, face_count*3, GL_UNSIGNED_INT,(const void*)faces_drawn);// (const void*)(sizeof(GLfloat)*6));
 		glPopMatrix();
 		faces_drawn += sizeof(GLfloat)*face_count*3;
