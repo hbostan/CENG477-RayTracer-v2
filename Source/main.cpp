@@ -7,12 +7,17 @@
 
 //////-------- Global Variables -------/////////
 
+#define PI 3.14159265
+
 GLuint gpuVertexBuffer;
 GLuint gpuNormalBuffer;
 GLuint gpuIndexBuffer;
 
 // Sample usage for reading an XML scene file
 parser::Scene scene;
+
+bool lightsUp = true;
+bool lightState[9] = { true, true, true, true, true, true, true, true, true};
 
 void setCamera()
 {
@@ -52,6 +57,49 @@ void updateCameraPosition()
     scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
 }
 
+void rotateVector(float angle, Vec3f& original, Vec3f direction)
+{
+	float m[16];
+
+	angle = angle * PI / 180;
+    float cosine = cos(angle);
+	float sine = sin(angle);
+
+	Vec3f u = direction.normalized();
+
+	float x = u.x;
+	float y = u.y;
+	float z = u.z;
+	float t = 1 - cosine;
+
+	m[0] = t * x * x + cosine;
+	m[1] = t * x * y - sine * z;
+	m[2] = t * x * z + sine * y;
+	m[3] = 0.0;
+
+	m[4] = t * x * y + sine * z;
+	m[5] = t * y * y + cosine;
+	m[6] = t * y * z - sine * x;
+	m[7] = 0.0;
+
+	m[8] = t * x * z - sine * y;
+	m[9] = t * y * z + sine * x;
+	m[10] = t * z * z + cosine;
+	m[11] = 0.0;
+
+	m[12] = 0.0;
+	m[13] = 0.0;
+	m[14] = 0.0;
+	m[15] = 1.0;
+
+	Vec3f result = Vec3f(0);
+    result.x = m[0] * original.x + m[1] * original.y + m[2] * original.z;
+    result.y = m[4] * original.x + m[5] * original.y + m[6] * original.z;
+    result.z = m[8] * original.x + m[9] * original.y + m[10] * original.z;
+    original = result;
+
+}
+
 static GLFWwindow* win = NULL;
 
 static void errorCallback(int error, const char* description) {
@@ -61,15 +109,55 @@ static void errorCallback(int error, const char* description) {
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
-	else if(key == GLFW_KEY_W && action == GLFW_REPEAT)
+	else if(key == GLFW_KEY_W && action != GLFW_RELEASE)
 	{
 		scene.camera.position += scene.camera.gaze * 0.05;
 		updateCameraPosition();
 	}
-	else if(key == GLFW_KEY_S && action == GLFW_REPEAT)
+	else if(key == GLFW_KEY_S && action != GLFW_RELEASE)
 	{
 		scene.camera.position -= scene.camera.gaze * 0.05;
 		updateCameraPosition();
+	}
+	else if(key == GLFW_KEY_D && action != GLFW_RELEASE)
+	{
+		rotateVector(-0.5, scene.camera.gaze, scene.camera.up);
+		setCamera();
+	}
+	else if(key == GLFW_KEY_A && action != GLFW_RELEASE)
+	{
+		rotateVector(0.5, scene.camera.gaze, scene.camera.up);
+		setCamera();
+	}
+	else if(key == GLFW_KEY_U && action != GLFW_RELEASE)
+	{
+		rotateVector(0.5, scene.camera.gaze, scene.camera.right_vector);
+		setCamera();
+	}
+	else if(key == GLFW_KEY_J && action != GLFW_RELEASE)
+	{
+		rotateVector(-0.5, scene.camera.gaze, scene.camera.right_vector);
+		setCamera();
+	}
+	else if(key == GLFW_KEY_0 && action == GLFW_PRESS)
+	{
+		for(int i=0; i<scene.point_lights.size(); i++)
+		{
+			if(lightsUp)
+				glDisable(GL_LIGHT0 + i);
+			else
+				glEnable(GL_LIGHT0 + i);
+		}
+		lightsUp = !lightsUp;
+	}
+	else if(key > 48 && key < 58 && action == GLFW_PRESS)
+	{
+		int i = key - 49;
+		if(lightState[i])
+			glDisable(GL_LIGHT0 + i);
+		else
+			glEnable(GL_LIGHT0 + i);
+		lightState[i] = !lightState[i];
 	}
 }
 
@@ -294,9 +382,10 @@ void drawElements()
 
 		delete[] normalArray;
 
-		
-		GLfloat ambient[] = {scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z, 1.0f};
-
+		for(int i=0; i<scene.point_lights.size(); i++)
+		{
+			glEnable(GL_LIGHT0 + i);
+		}
 		
 
 		std::cout << faces_size << std::endl;
@@ -329,16 +418,19 @@ void drawElements()
 	glVertexPointer(3, GL_FLOAT, 0, 0);
 	glNormalPointer(GL_FLOAT,0,(void*)meshVertexPosDataSizeInBytes);
 
-	for(int i=0; i<scene.point_lights.size(); i++)
-		{
-			glEnable(GL_LIGHT0 + i);
-			GLfloat color[] = {scene.point_lights[i].intensity.x,scene.point_lights[i].intensity.y,scene.point_lights[i].intensity.z, 1.0f};
-			GLfloat position[] = {scene.point_lights[i].position.x,scene.point_lights[i].position.y,scene.point_lights[i].position.z, 1.0f};
+	GLfloat ambient[] = {scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z, 1.0f};
 
-			glLightfv(GL_LIGHT0 + i,GL_POSITION, position);
-			glLightfv(GL_LIGHT0 + i,GL_DIFFUSE, color);
-			glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
-		}
+	glLightModelfv(GL_AMBIENT, ambient);
+
+	for(int i=0; i<scene.point_lights.size(); i++)
+	{
+		GLfloat color[] = {scene.point_lights[i].intensity.x,scene.point_lights[i].intensity.y,scene.point_lights[i].intensity.z, 1.0f};
+		GLfloat position[] = {scene.point_lights[i].position.x,scene.point_lights[i].position.y,scene.point_lights[i].position.z, 1.0f};
+
+		glLightfv(GL_LIGHT0 + i,GL_POSITION, position);
+		glLightfv(GL_LIGHT0 + i,GL_DIFFUSE, color);
+		glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
+	}
 
 	int faces_drawn = 0;
 	for(auto mesh: scene.meshes)
