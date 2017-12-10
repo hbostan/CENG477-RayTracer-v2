@@ -191,6 +191,7 @@ void drawElements()
 
 		vertex_data_size = scene.vertex_data.size();
 
+
 		GLfloat* vertexPos = new GLfloat[vertex_data_size*3];
 
 		for(int i=0, j=0; i<vertex_data_size; j++, i++)
@@ -204,33 +205,44 @@ void drawElements()
 		//
 		//	CALCULATE NORMALS
 		//
+		Vec3f* normalArray = new Vec3f[vertex_data_size];
+
+		for(int i = 0; i < vertex_data_size; i++)
+		{
+			normalArray[i] = Vec3f(0);
+		}
+
+		for(auto mesh: scene.meshes)
+		{
+			for(int j = 0; j < mesh.faces.size(); j++)
+			{
+				int v0 = mesh.faces[j].v0_id;
+				int v1 = mesh.faces[j].v1_id;
+				int v2 = mesh.faces[j].v2_id;
+
+				Vec3f a = scene.vertex_data[v0];
+				Vec3f b = scene.vertex_data[v1];
+				Vec3f c = scene.vertex_data[v2];
+
+				Vec3f n = (b-a).cross(c-a).normalized();
+
+				normalArray[v0] += n;
+				normalArray[v1] += n;
+				normalArray[v2] += n;
+			}
+		}
 
 		GLfloat* vertexNormals = new GLfloat[vertex_data_size*3];
 
-		for(int i=0, idx=0 ; i< scene.vertex_data.size(); i++)
+		for(int i=0, j=0; i<vertex_data_size; j++, i++)
 		{
-			Vec3f normal(0,0,0);
-			for(auto mesh: scene.meshes)
-			{
-				for(int j=0; j< mesh.faces.size(); j++)
-				{
-					if(i == mesh.faces[j].v0_id || i == mesh.faces[j].v1_id || i == mesh.faces[j].v2_id)
-					{
-						Vec3f a = scene.vertex_data[mesh.faces[j].v0_id]; // Burda hangi vertice gore normal aldigimizin onemli olmamasi lazim
-						Vec3f b = scene.vertex_data[mesh.faces[j].v1_id]; // Senin attigin linkte ona gore a,b,c hesaplamis
-						Vec3f c = scene.vertex_data[mesh.faces[j].v2_id];
-
-						Vec3f n = (b-a).cross(c-a).normalized();
-						normal = normal + n;
-					}
-				}
-			}
-			normal.normalize();
-			vertexNormals[idx]=normal.x;
-			vertexNormals[++idx]=normal.y;
-			vertexNormals[++idx]=normal.z;
-			idx++;
+			normalArray[i].normalize();
+			vertexNormals[j] = normalArray[i].x;
+			vertexNormals[++j] = normalArray[i].y;
+			vertexNormals[++j] = normalArray[i].z;
 		}
+
+		delete[] normalArray;
 
 		
 		GLfloat ambient[] = {scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z, 1.0f};
