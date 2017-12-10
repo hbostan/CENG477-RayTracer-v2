@@ -359,6 +359,15 @@ void drawElements()
 		glMaterialfv(GL_FRONT, GL_SPECULAR, spec);
 		glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
 
+		if(mesh.mesh_type == "Solid")
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+		else if (mesh.mesh_type == "Wireframe")
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+
 		glDrawElements(GL_TRIANGLES, face_count*3, GL_UNSIGNED_INT,(const void*)faces_drawn);// (const void*)(sizeof(GLfloat)*6));
 		glPopMatrix();
 		faces_drawn += sizeof(GLfloat)*face_count*3;
