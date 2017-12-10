@@ -13,6 +13,45 @@ GLuint gpuIndexBuffer;
 
 // Sample usage for reading an XML scene file
 parser::Scene scene;
+
+void setCamera()
+{
+    scene.camera.gaze = scene.camera.gaze.normalized();
+    scene.camera.right_vector = (scene.camera.up.cross(-scene.camera.gaze)).normalized();
+    scene.camera.up = (scene.camera.right_vector.cross(scene.camera.gaze)).normalized();
+
+    float left = scene.camera.near_plane.x;
+    float right = scene.camera.near_plane.y;
+    float bottom = scene.camera.near_plane.z;
+    float top = scene.camera.near_plane.w;
+        
+    Vec3f m = scene.camera.position + scene.camera.gaze * scene.camera.near_distance;
+
+    /* Set camera position */ 
+    glMatrixMode(GL_MODELVIEW); 
+    glLoadIdentity();
+    gluLookAt(scene.camera.position.x, scene.camera.position.y, scene.camera.position.z,
+    m.x, m.y, m.z,
+    scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
+    /* Set projection frustrum */
+    glMatrixMode(GL_PROJECTION); 
+	glLoadIdentity();
+    glFrustum(left, right, bottom, top, scene.camera.near_distance, scene.camera.far_distance);
+
+    glMatrixMode(GL_MODELVIEW);
+}
+
+void updateCameraPosition()
+{
+	Vec3f m = scene.camera.position + scene.camera.gaze * scene.camera.near_distance;
+
+	glMatrixMode(GL_MODELVIEW); 
+    glLoadIdentity();
+	gluLookAt(scene.camera.position.x, scene.camera.position.y, scene.camera.position.z,
+    m.x, m.y, m.z,
+    scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
+}
+
 static GLFWwindow* win = NULL;
 
 static void errorCallback(int error, const char* description) {
@@ -22,6 +61,16 @@ static void errorCallback(int error, const char* description) {
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+	else if(key == GLFW_KEY_W && action == GLFW_REPEAT)
+	{
+		scene.camera.position += scene.camera.gaze * 0.05;
+		updateCameraPosition();
+	}
+	else if(key == GLFW_KEY_S && action == GLFW_REPEAT)
+	{
+		scene.camera.position -= scene.camera.gaze * 0.05;
+		updateCameraPosition();
+	}
 }
 
 void reshape(GLFWwindow* win, int w, int h)   // Create The Reshape Function (the viewport)
@@ -247,16 +296,7 @@ void drawElements()
 		
 		GLfloat ambient[] = {scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z, 1.0f};
 
-		for(int i=0; i<scene.point_lights.size(); i++)
-		{
-			glEnable(GL_LIGHT0 + i);
-			GLfloat color[] = {scene.point_lights[i].intensity.x,scene.point_lights[i].intensity.y,scene.point_lights[i].intensity.z, 1.0f};
-			GLfloat position[] = {scene.point_lights[i].position.x,scene.point_lights[i].position.y,scene.point_lights[i].position.z, 1.0f};
-
-			glLightfv(GL_LIGHT0 + i,GL_POSITION, position);
-			glLightfv(GL_LIGHT0 + i,GL_DIFFUSE, color);
-			glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
-		}
+		
 
 		/*glEnable(GL_LIGHT0);
 		GLfloat color[] = {1.0,0,0,1};
@@ -310,6 +350,17 @@ void drawElements()
 	glVertexPointer(3, GL_FLOAT, 0, 0);
 	glNormalPointer(GL_FLOAT,0,(void*)meshVertexPosDataSizeInBytes);
 
+	for(int i=0; i<scene.point_lights.size(); i++)
+		{
+			glEnable(GL_LIGHT0 + i);
+			GLfloat color[] = {scene.point_lights[i].intensity.x,scene.point_lights[i].intensity.y,scene.point_lights[i].intensity.z, 1.0f};
+			GLfloat position[] = {scene.point_lights[i].position.x,scene.point_lights[i].position.y,scene.point_lights[i].position.z, 1.0f};
+
+			glLightfv(GL_LIGHT0 + i,GL_POSITION, position);
+			glLightfv(GL_LIGHT0 + i,GL_DIFFUSE, color);
+			glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
+		}
+
 	int faces_drawn = 0;
 	for(auto mesh: scene.meshes)
 	{
@@ -355,32 +406,6 @@ void display()
 	
 	angle += 0.5;
     drawElements();
-}
-
-void setCamera()
-{
-    scene.camera.gaze = scene.camera.gaze.normalized();
-    scene.camera.right_vector = (scene.camera.up.cross(-scene.camera.gaze)).normalized();
-    scene.camera.up = (scene.camera.right_vector.cross(scene.camera.gaze)).normalized();
-
-    float left = scene.camera.near_plane.x;
-    float right = scene.camera.near_plane.y;
-    float bottom = scene.camera.near_plane.z;
-    float top = scene.camera.near_plane.w;
-        
-    Vec3f m = scene.camera.position + scene.camera.gaze * scene.camera.near_distance;
-
-    /* Set camera position */ 
-    //glMatrixMode(GL_MODELVIEW); 
-    //glLoadIdentity();
-    gluLookAt(scene.camera.position.x, scene.camera.position.y, scene.camera.position.z,
-    m.x, m.y, m.z,
-    scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
-    /* Set projection frustrum */
-    glMatrixMode(GL_PROJECTION); glLoadIdentity( );
-    glFrustum(left, right, bottom, top, scene.camera.near_distance, scene.camera.far_distance);
-
-    glMatrixMode(GL_MODELVIEW);
 }
 
 int main(int argc, char* argv[]) {
