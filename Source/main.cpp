@@ -43,7 +43,7 @@ void setCamera()
 	glLoadIdentity();
     glFrustum(left, right, bottom, top, scene.camera.near_distance, scene.camera.far_distance);
 
-    glMatrixMode(GL_MODELVIEW);
+	glMatrixMode(GL_MODELVIEW);
 }
 
 void updateCameraPosition()
@@ -109,32 +109,32 @@ static void errorCallback(int error, const char* description) {
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
-	else if(key == GLFW_KEY_W && action != GLFW_RELEASE)
+	else if(key == GLFW_KEY_W && action == GLFW_PRESS)
 	{
 		scene.camera.position += scene.camera.gaze * 0.05;
 		updateCameraPosition();
 	}
-	else if(key == GLFW_KEY_S && action != GLFW_RELEASE)
+	else if(key == GLFW_KEY_S && action == GLFW_PRESS)
 	{
 		scene.camera.position -= scene.camera.gaze * 0.05;
 		updateCameraPosition();
 	}
-	else if(key == GLFW_KEY_D && action != GLFW_RELEASE)
+	else if(key == GLFW_KEY_D && action == GLFW_PRESS)
 	{
 		rotateVector(-0.5, scene.camera.gaze, scene.camera.up);
 		setCamera();
 	}
-	else if(key == GLFW_KEY_A && action != GLFW_RELEASE)
+	else if(key == GLFW_KEY_A && action == GLFW_PRESS)
 	{
 		rotateVector(0.5, scene.camera.gaze, scene.camera.up);
 		setCamera();
 	}
-	else if(key == GLFW_KEY_U && action != GLFW_RELEASE)
+	else if(key == GLFW_KEY_U && action == GLFW_PRESS)
 	{
 		rotateVector(0.5, scene.camera.gaze, scene.camera.right_vector);
 		setCamera();
 	}
-	else if(key == GLFW_KEY_J && action != GLFW_RELEASE)
+	else if(key == GLFW_KEY_J && action == GLFW_PRESS)
 	{
 		rotateVector(-0.5, scene.camera.gaze, scene.camera.right_vector);
 		setCamera();
@@ -161,108 +161,11 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 	}
 }
 
-void reshape(GLFWwindow* win, int w, int h)   // Create The Reshape Function (the viewport)
-{
-    /*w = w < 1 ? 1 : w;
-    h = h < 1 ? 1 : h;
-
-    glViewport(0, 0, w, h);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    //glOrtho(-10, 10, -10, 10, -10, 10);
-    //gluPerspective(45, 1, 1, 500);
-    glFrustum(scene.camera.near_plane.x, scene.camera.near_plane.y,
-                scene.camera.near_plane.z, scene.camera.near_plane.w,
-                scene.camera.near_distance, scene.camera.far_distance);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();*/
-}
-
 void init(int w, int h)
 {
     glEnable(GL_DEPTH_TEST);
 	glShadeModel(GL_SMOOTH);
-
-    //reshape(win, w, h);
 }
-
-void drawCubeElementsVBO()
-{
-	static bool firstTime = true;
-
-	static int vertexPosDataSizeInBytes;
-	
-	if (firstTime)
-	{
-		firstTime = false;
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_COLOR_ARRAY);
-
-		GLuint indices[] = {
-			0, 1, 2, // front
-			3, 0, 2, // front
-			4, 7, 6, // back
-			5, 4, 6, // back
-			0, 3, 4, // left
-			3, 7, 4, // left
-			2, 1, 5, // right
-			6, 2, 5, // right
-			3, 2, 7, // top
-			2, 6, 7, // top
-			0, 4, 1, // bottom
-			4, 5, 1  // bottom
-		};
-
-		GLfloat vertexPos[] = {
-			-0.5, -0.5,  0.5, // 0: bottom-left-front
-			0.5, -0.5,  0.5, // 1: bottom-right-front
-			0.5,  0.5,  0.5, // 2: top-right-front
-			-0.5,  0.5,  0.5, // 3: top-left-front
-			-0.5, -0.5, -0.5, // 4: bottom-left-back
-			0.5, -0.5, -0.5, // 5: bottom-right-back
-			0.5,  0.5, -0.5, // 6: top-right-back
-			-0.5,  0.5, -0.5, // 7: top-left-back
-		};
-
-		GLfloat vertexCol[] = {
-			1.0, 1.0, 1.0, // 0: unused
-			0.0, 1.0, 1.0, // 1: bottom
-			1.0, 0.0, 0.0, // 2: front
-			1.0, 1.0, 1.0, // 3: unused
-			1.0, 1.0, 0.0, // 4: left
-			0.0, 0.0, 1.0, // 5: right
-			0.0, 1.0, 0.0, // 6: back 
-			1.0, 0.0, 1.0, // 7: top
-		};
-
-		GLuint vertexAttribBuffer, indexBuffer;
-
-		glGenBuffers(1, &vertexAttribBuffer);
-		glGenBuffers(1, &indexBuffer);
-
-		assert(vertexAttribBuffer > 0 && indexBuffer > 0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vertexAttribBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-		vertexPosDataSizeInBytes = sizeof(vertexPos);
-		int vertexColDataSizeInBytes = sizeof(vertexCol);
-		int indexDataSizeInBytes = sizeof(indices);
-		
-		glBufferData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes + vertexColDataSizeInBytes, 0, GL_STATIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, vertexPosDataSizeInBytes, vertexPos);
-		glBufferSubData(GL_ARRAY_BUFFER, vertexPosDataSizeInBytes, vertexColDataSizeInBytes, vertexCol);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexDataSizeInBytes, indices, GL_STATIC_DRAW);
-	}
-
-	glVertexPointer(3, GL_FLOAT, 0, 0);
-	glColorPointer(3, GL_FLOAT, 0, (void*)vertexPosDataSizeInBytes);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-}
-
 
 void doTransformations(std::vector<parser::Transformation> transformations)
 {
@@ -386,10 +289,6 @@ void drawElements()
 		{
 			glEnable(GL_LIGHT0 + i);
 		}
-		
-
-		std::cout << faces_size << std::endl;
-		std::cout << vertex_data_size << std::endl;
         
         GLuint vertexAttribBuffer, indexBuffer;
 
@@ -420,7 +319,6 @@ void drawElements()
 
 	GLfloat ambient[] = {scene.ambient_light.x,scene.ambient_light.y,scene.ambient_light.z, 1.0f};
 
-	glLightModelfv(GL_AMBIENT, ambient);
 
 	for(int i=0; i<scene.point_lights.size(); i++)
 	{
@@ -428,6 +326,7 @@ void drawElements()
 		GLfloat position[] = {scene.point_lights[i].position.x,scene.point_lights[i].position.y,scene.point_lights[i].position.z, 1.0f};
 
 		glLightfv(GL_LIGHT0 + i,GL_POSITION, position);
+		glLightfv(GL_LIGHT0 + i,GL_AMBIENT, ambient);
 		glLightfv(GL_LIGHT0 + i,GL_DIFFUSE, color);
 		glLightfv(GL_LIGHT0 + i,GL_SPECULAR, color);
 	}
@@ -437,13 +336,13 @@ void drawElements()
 	{
 		int face_count = mesh.faces.size();
 		glPushMatrix();
-		doTransformations(mesh.transformations);//glRotatef(135, 0, 1, 0);
+		doTransformations(mesh.transformations);
 
 		auto mat = scene.materials[mesh.material_id];
 		
-		GLfloat amb[] ={mat.ambient.x, mat.ambient.y, mat.ambient.z};
-		GLfloat diff[] ={mat.diffuse.x, mat.diffuse.y, mat.diffuse.z};
-		GLfloat spec[] = {mat.specular.x, mat.specular.y, mat.specular.z};
+		GLfloat amb[] ={mat.ambient.x, mat.ambient.y, mat.ambient.z, 1.0};
+		GLfloat diff[] ={mat.diffuse.x, mat.diffuse.y, mat.diffuse.z, 1.0};
+		GLfloat spec[] = {mat.specular.x, mat.specular.y, mat.specular.z, 1.0};
 		GLfloat shininess[] = {mat.phong_exponent};
 
 		glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
@@ -460,7 +359,7 @@ void drawElements()
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		}
 
-		glDrawElements(GL_TRIANGLES, face_count*3, GL_UNSIGNED_INT,(const void*)faces_drawn);// (const void*)(sizeof(GLfloat)*6));
+		glDrawElements(GL_TRIANGLES, face_count*3, GL_UNSIGNED_INT,(const void*)faces_drawn);
 		glPopMatrix();
 		faces_drawn += sizeof(GLfloat)*face_count*3;
 	}
@@ -474,31 +373,7 @@ void display()
 	glClearStencil(0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	static float angle = 0;
-
-	GLfloat deltaZ = -30;
-
-	/*glLoadIdentity();
-	glTranslatef(-6, -6, deltaZ);
-	glRotatef(angle, 1, 0, 0);
-	glScalef(5, 5, 5);
-	drawCubeElementsVBO();
-
-	glLoadIdentity();
-	glTranslatef(-6, 6, deltaZ);
-	glRotatef(angle / 2, 0, 1, 0);
-	glScalef(5, 5, 5);
-	drawCubeElementsVBO();
-
-	glLoadIdentity();
-	glTranslatef(6, 6, deltaZ);
-	glRotatef(angle / 4, 0, 0, 1);
-	glScalef(5, 5, 5);
-	drawCubeElementsVBO();
-*/
-	
-	angle += 0.5;
-    drawElements();
+	drawElements();
 }
 
 int main(int argc, char* argv[]) {
@@ -527,10 +402,8 @@ int main(int argc, char* argv[]) {
     }
 
     glfwSetKeyCallback(win, keyCallback);
-    glfwSetWindowSizeCallback(win, reshape);
     
     init(scene.camera.image_width, scene.camera.image_height);
-    //init(640, 480);
 
     setCamera();
 
@@ -539,7 +412,7 @@ int main(int argc, char* argv[]) {
 
         display();
 
-        glfwSwapBuffers(win);
+		glfwSwapBuffers(win);
     }
 
     glfwDestroyWindow(win);
